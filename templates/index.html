@@ -1,0 +1,30 @@
+<script>
+  const sections = document.querySelectorAll('.content-section');
+
+  function updateTextOpacity() {
+    const windowHeight = window.innerHeight;
+    const windowCenter = windowHeight / 2;
+
+    sections.forEach((sec) => {
+      const rect = sec.getBoundingClientRect();
+      const secCenter = rect.top + rect.height / 2;
+
+      const distance = Math.abs(windowCenter - secCenter);
+
+      // ✨ 여백이 늘어난 만큼 감지 거리(maxDistance)도 화면 높이의 60폭으로 확장
+      const maxDistance = windowHeight * 0.6;
+      let opacity = 1 - distance / maxDistance;
+
+      if (opacity < 0.1) opacity = 0.1; // 완전히 사라지지 않고 은은하게 유지
+      if (opacity > 1) opacity = 1;
+
+      sec.style.opacity = opacity;
+    });
+  }
+
+  window.addEventListener('scroll', updateTextOpacity);
+  window.addEventListener('resize', updateTextOpacity);
+
+  // 초기 로드 시 실행
+  updateTextOpacity();
+</script>
