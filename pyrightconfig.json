@@ -1,0 +1,13 @@
+{
+  "include": [
+    "app"
+  ],
+  "extraPaths": [
+    "C:\\Users\\dbtjs\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages",
+    "C:\\Users\\dbtjs\\AppData\\Local\\Programs\\Python\\Python310",
+    "c:\\Users\\dbtjs\\Desktop\\Corporate Landing Page",
+    "c:\\Users\\dbtjs\\Desktop\\Corporate Landing Page\\app"
+  ],
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Windows"
+}
