@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import engine, Base, get_db, AsyncSessionLocal
-from app.models import LandingContent, Notice
+from app.models import LandingContent, Notice, FaqItem
 from app.routers import contact, pre_registration, admin
 
 # 기본 디렉터리 경로 설정
@@ -66,6 +66,41 @@ async def lifespan(app: FastAPI):
             )
             session.add(default_notice)
 
+        # 3. 초기 Q&A FAQ 데이터
+        faq_count = await session.execute(select(FaqItem))
+        if not faq_count.scalars().all():
+            default_faqs = [
+                FaqItem(
+                    category="서비스/도입",
+                    question="기존 온프레미스(On-Premise) 및 레거시 시스템과도 연동이 가능한가요?",
+                    answer="네, 가능합니다. SecOps는 AWS, Azure, GCP 등 주요 퍼블릭 클라우드뿐만 아니라 온프레미스 하이퍼바이저 및 베어메탈 서버 환경을 위한 경량화 에이전트(Lightweight Daemon)와 Syslog, SNMP 인터페이스를 모두 지원합니다.",
+                    order_num=1,
+                    is_active=True
+                ),
+                FaqItem(
+                    category="기술/보안",
+                    question="AI 엔진의 오탐률(False Positive)은 어떻게 제어하나요?",
+                    answer="조직 내부의 정상 트래픽 기준선(Baseline)을 학습하는 전용 격리형 신경망 모델을 배포하며, MITRE ATT&CK 프레임워크 기반 3단계 교차 검증 알고리즘을 통해 오탐률을 0.02% 이하로 최소화합니다.",
+                    order_num=2,
+                    is_active=True
+                ),
+                FaqItem(
+                    category="컨설팅/비용",
+                    question="맞춤형 보안 컨설팅 및 취약점 진단 절차는 어떻게 진행되나요?",
+                    answer="신청 후 24시간 이내 전담 보안 아키텍트가 배정되어 사전 인프라 인터뷰를 진행합니다. 이후 2주간 무중단 취약점 스캔 및 모의 침투 테스트를 거쳐 상세 진단 리포트와 개선 가이드를 무상 제공합니다.",
+                    order_num=3,
+                    is_active=True
+                ),
+                FaqItem(
+                    category="컴플라이언스",
+                    question="ISMS-P, SOC2 등 보안 인증 규제 대응을 지원하나요?",
+                    answer="감사 증적 자동 수집 및 감사관 제출용 표준 보고서 생성 기능을 기본 탑재하고 있어, 규제 대응에 소요되는 리소스를 80% 이상 절감할 수 있습니다.",
+                    order_num=4,
+                    is_active=True
+                )
+            ]
+            session.add_all(default_faqs)
+
         await session.commit()
     
     yield
@@ -83,7 +118,7 @@ app.include_router(admin.router)
 
 @app.get("/")
 async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
-    # DB에서 랜딩페이지 동적 콘텐츠 및 공지사항 가져오기
+    # DB에서 랜딩페이지 동적 콘텐츠 및 공지사항, FAQ 가져오기
     content_result = await db.execute(select(LandingContent))
     raw_contents = content_result.scalars().all()
     contents = {c.key: c.value for c in raw_contents}
@@ -94,6 +129,12 @@ async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
     active_notices = notice_result.scalars().all()
     active_notice_list = [n.to_dict() for n in active_notices]
 
+    faq_result = await db.execute(
+        select(FaqItem).where(FaqItem.is_active == True).order_by(FaqItem.order_num.asc(), FaqItem.id.asc())
+    )
+    active_faqs = faq_result.scalars().all()
+    faq_list = [f.to_dict() for f in active_faqs]
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -101,6 +142,46 @@ async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
             "title": "SecOps — Next-Gen Cyber Defense & Operations",
             "year": 2026,
             "contents": contents,
-            "notices": active_notice_list
+            "notices": active_notice_list,
+            "faqs": faq_list,
+            "active_page": "index"
+        }
+    )
+
+@app.get("/qna")
+async def read_qna(request: Request, db: AsyncSession = Depends(get_db)):
+    faq_result = await db.execute(
+        select(FaqItem).where(FaqItem.is_active == True).order_by(FaqItem.order_num.asc(), FaqItem.id.asc())
+    )
+    active_faqs = faq_result.scalars().all()
+    faq_list = [f.to_dict() for f in active_faqs]
+
+    return templates.TemplateResponse(
+        request,
+        "qna.html",
+        {
+            "title": "Q&A 지식베이스 — SecOps Cyber Defense",
+            "year": 2026,
+            "faqs": faq_list,
+            "active_page": "qna"
+        }
+    )
+
+@app.get("/support")
+async def read_support(request: Request, db: AsyncSession = Depends(get_db)):
+    notice_result = await db.execute(
+        select(Notice).where(Notice.is_active == True).order_by(Notice.is_pinned.desc(), Notice.created_at.desc())
+    )
+    active_notices = notice_result.scalars().all()
+    active_notice_list = [n.to_dict() for n in active_notices]
+
+    return templates.TemplateResponse(
+        request,
+        "support.html",
+        {
+            "title": "지원센터 — SecOps Cyber Defense",
+            "year": 2026,
+            "notices": active_notice_list,
+            "active_page": "support"
         }
     )

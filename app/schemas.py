@@ -32,5 +32,23 @@ class NoticeUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_pinned: Optional[bool] = None
 
+class FaqCreate(BaseModel):
+    category: str = Field("일반", description="카테고리")
+    question: str = Field(..., min_length=2, description="질문 내용")
+    answer: str = Field(..., min_length=2, description="답변 내용")
+    order_num: int = Field(0, description="정렬 순서")
+    is_active: bool = Field(True, description="활성화 여부")
+
+class FaqUpdate(BaseModel):
+    category: Optional[str] = None
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    order_num: Optional[int] = None
+    is_active: Optional[bool] = None
+
 class ContentBatchUpdate(BaseModel):
     contents: Dict[str, str] = Field(..., description="키-값 형태의 랜딩페이지 설정 내용")
+
+class AdminLoginPayload(BaseModel):
+    password: str = Field(..., description="관리자 인증 비밀번호")
+

@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
-    <div class="sidebar-logo">
+    <div class="sidebar-logo" onclick="location.href='/';" style="cursor: pointer;">
       <div class="logo-badge">
         <span class="pulse-dot"></span>
         <span class="logo-tag">SEC-V3</span>
@@ -12,27 +12,39 @@
     <nav class="sidebar-nav">
       <ul>
         <li>
-          <a href="#section1" class="nav-item active">
+          <a href="/#section1" class="nav-item {% if active_page == 'index' or not active_page %}active{% endif %}">
             <span class="nav-idx">01.</span>
             <span class="nav-label">Overview</span>
           </a>
         </li>
         <li>
-          <a href="#section2" class="nav-item">
+          <a href="/#section2" class="nav-item">
             <span class="nav-idx">02.</span>
             <span class="nav-label">Threat Intelligence</span>
           </a>
         </li>
         <li>
-          <a href="#section3" class="nav-item">
+          <a href="/#section3" class="nav-item">
             <span class="nav-idx">03.</span>
             <span class="nav-label">Pipeline</span>
           </a>
         </li>
         <li>
-          <a href="#section4" class="nav-item">
+          <a href="/#section4" class="nav-item">
             <span class="nav-idx">04.</span>
             <span class="nav-label">Experience</span>
+          </a>
+        </li>
+        <li>
+          <a href="/qna" class="nav-item {% if active_page == 'qna' %}active{% endif %}">
+            <span class="nav-idx">05.</span>
+            <span class="nav-label">Q&A 지식베이스</span>
+          </a>
+        </li>
+        <li>
+          <a href="/support" class="nav-item {% if active_page == 'support' %}active{% endif %}">
+            <span class="nav-idx">06.</span>
+            <span class="nav-label">지원센터 (1:1 문의)</span>
           </a>
         </li>
       </ul>
@@ -40,13 +52,14 @@
   </div>
 
   <div class="sidebar-footer">
-    <div class="system-status">
+    <div class="system-status" onclick="location.href='/admin';" title="관리자 콘솔 접속 (Ctrl+Shift+A)" style="cursor: pointer;">
       <div class="status-indicator"></div>
       <div class="status-text">
-        <span class="status-title">System Status</span>
+        <span class="status-title">System Status <small style="opacity:0.4; font-size:10px;">🔒</small></span>
         <span class="status-value">Defenses Active</span>
       </div>
     </div>
-    <a href="#section4" class="sidebar-cta">Contact Ops</a>
+    <a href="/support" class="sidebar-cta">1:1 지원센터 문의</a>
   </div>
 </aside>
+

@@ -4,23 +4,56 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from app.database import get_db
-from app.models import ContactInquiry, PreRegistration, LandingContent, Notice
+from app.models import ContactInquiry, PreRegistration, LandingContent, Notice, FaqItem
 from app.schemas import (
-    ContactStatusUpdate, NoticeCreate, NoticeUpdate, ContentBatchUpdate
+    ContactStatusUpdate, NoticeCreate, NoticeUpdate, ContentBatchUpdate,
+    FaqCreate, FaqUpdate, AdminLoginPayload
 )
 
 router = APIRouter(tags=["Admin"])
 
+ADMIN_PASSWORD = "secops2026"
+
 # ==============================================================================
-# 📺 관리자 대시보드 HTML 페이지
+# 🔑 관리자 인증 & 대시보드 메인
 # ==============================================================================
+@router.post("/api/admin/verify-password")
+async def verify_admin_password(payload: AdminLoginPayload):
+    """관리자 접근 비밀번호 검증 API"""
+    if payload.password == ADMIN_PASSWORD:
+        return {"success": True, "message": "관리자 인증에 성공하였습니다."}
+    raise HTTPException(status_code=401, detail="비밀번호가 올바르지 않습니다.")
+
+
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard_page(request: Request):
     """관리자 대시보드 메인 웹 페이지"""
     from app.main import templates
     return templates.TemplateResponse(request, "admin.html", {"title": "SecOps — Administrator Portal"})
+
+
+@router.get("/api/admin/stats")
+async def get_admin_dashboard_stats(db: AsyncSession = Depends(get_db)):
+    """대시보드 통계 요약 데이터 API"""
+    total_inquiries = (await db.execute(select(func.count(ContactInquiry.id)))).scalar() or 0
+    pending_inquiries = (await db.execute(select(func.count(ContactInquiry.id)).where(ContactInquiry.status == "PENDING"))).scalar() or 0
+    total_pre_regs = (await db.execute(select(func.count(PreRegistration.id)))).scalar() or 0
+    total_notices = (await db.execute(select(func.count(Notice.id)))).scalar() or 0
+    total_faqs = (await db.execute(select(func.count(FaqItem.id)))).scalar() or 0
+
+    return {
+        "success": True,
+        "data": {
+            "total_inquiries": total_inquiries,
+            "pending_inquiries": pending_inquiries,
+            "total_pre_regs": total_pre_regs,
+            "total_notices": total_notices,
+            "total_faqs": total_faqs
+        }
+    }
+
 
 
 # ==============================================================================
@@ -226,3 +259,73 @@ async def update_landing_contents(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"콘텐츠 설정 업데이트 오류: {str(e)}")
+
+
+# ==============================================================================
+# ❓ 5. FAQ (Q&A 자주 묻는 질문) 관리 API
+# ==============================================================================
+@router.get("/api/admin/faqs")
+async def get_all_faqs(db: AsyncSession = Depends(get_db)):
+    query = select(FaqItem).order_by(FaqItem.order_num.asc(), FaqItem.id.asc())
+    result = await db.execute(query)
+    faqs = result.scalars().all()
+    return {"success": True, "count": len(faqs), "data": [f.to_dict() for f in faqs]}
+
+
+@router.post("/api/admin/faqs", status_code=status.HTTP_201_CREATED)
+async def create_faq(payload: FaqCreate, db: AsyncSession = Depends(get_db)):
+    faq = FaqItem(
+        category=payload.category,
+        question=payload.question,
+        answer=payload.answer,
+        order_num=payload.order_num,
+        is_active=payload.is_active
+    )
+    db.add(faq)
+    await db.commit()
+    await db.refresh(faq)
+    return {"success": True, "message": "새 FAQ 항목이 추가되었습니다.", "data": faq.to_dict()}
+
+
+@router.put("/api/admin/faqs/{faq_id}")
+async def update_faq(
+    faq_id: int,
+    payload: FaqUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(FaqItem).where(FaqItem.id == faq_id)
+    result = await db.execute(query)
+    faq = result.scalar_one_or_none()
+
+    if not faq:
+        raise HTTPException(status_code=404, detail="수정할 FAQ 항목을 찾을 수 없습니다.")
+
+    if payload.category is not None:
+        faq.category = payload.category
+    if payload.question is not None:
+        faq.question = payload.question
+    if payload.answer is not None:
+        faq.answer = payload.answer
+    if payload.order_num is not None:
+        faq.order_num = payload.order_num
+    if payload.is_active is not None:
+        faq.is_active = payload.is_active
+
+    await db.commit()
+    await db.refresh(faq)
+    return {"success": True, "message": "FAQ 항목이 수정되었습니다.", "data": faq.to_dict()}
+
+
+@router.delete("/api/admin/faqs/{faq_id}")
+async def delete_faq(faq_id: int, db: AsyncSession = Depends(get_db)):
+    query = select(FaqItem).where(FaqItem.id == faq_id)
+    result = await db.execute(query)
+    faq = result.scalar_one_or_none()
+
+    if not faq:
+        raise HTTPException(status_code=404, detail="삭제할 FAQ 항목을 찾을 수 없습니다.")
+
+    await db.delete(faq)
+    await db.commit()
+    return {"success": True, "message": "FAQ 항목이 성공적으로 삭제되었습니다."}
+

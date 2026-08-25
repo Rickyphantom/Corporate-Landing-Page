@@ -93,3 +93,26 @@ class Notice(Base):
             "is_pinned": self.is_pinned,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else ""
         }
+
+class FaqItem(Base):
+    """자주 묻는 질문 (Q&A) 모델"""
+    __tablename__ = "faq_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    category: Mapped[str] = mapped_column(String(50), nullable=False, default="일반")
+    question: Mapped[str] = mapped_column(String(255), nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    order_num: Mapped[int] = mapped_column(default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "category": self.category,
+            "question": self.question,
+            "answer": self.answer,
+            "order_num": self.order_num,
+            "is_active": self.is_active,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else ""
+        }
