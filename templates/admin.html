@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or "SecOps — Administrator Portal" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="admin-body">
+
+  <!-- 🔒 관리자 인증 모달 레이어 -->
+  <div id="authModal" class="admin-auth-overlay">
+    <div class="admin-auth-card">
+      <div class="auth-icon">🛡️</div>
+      <h2>SecOps Admin Verification</h2>
+      <p>관리자 전용 접근 제어 영역입니다. 보안 암호를 입력하세요.</p>
+      
+      <form id="authForm" onsubmit="event.preventDefault(); handleAdminAuth();">
+        <div class="form-group">
+          <input type="password" id="adminPasswordInput" class="form-input text-center" placeholder="비밀번호 입력 (기본: secops2026)" autocomplete="current-password" required autofocus>
+        </div>
+        <div id="authErrorMsg" class="auth-error-msg" style="display:none;"></div>
+        <button type="submit" class="btn btn-primary full-width">관리자 로그인</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🖥️ 메인 관리자 대시보드 콘솔 (로그인 완료 시 노출) -->
+  <div id="adminApp" class="admin-layout" style="display: none;">
+    <!-- 관리자 상단 헤더 -->
+    <header class="admin-header">
+      <div class="admin-logo">
+        <span class="pulse-dot"></span>
+        <h2>SecOps Control Center</h2>
+        <span class="admin-badge">ADMIN PORTAL</span>
+      </div>
+      <div class="admin-user-info">
+        <span class="user-role">Administrator Active</span>
+        <button onclick="handleAdminLogout()" class="btn btn-danger btn-sm">🔒 로그아웃</button>
+      </div>
+    </header>
+
+    <div class="admin-container">
+      <!-- 사이드바 탭 메뉴 -->
+      <nav class="admin-sidebar">
+        <button class="admin-tab-btn active" onclick="switchAdminTab('overview')">
+          <span class="tab-icon">📊</span> 대시보드 개요
+        </button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('inquiries')">
+          <span class="tab-icon">💬</span> 문의 & Q&A 관리 <span id="pendingBadge" class="count-badge" style="display:none;">0</span>
+        </button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('faqs')">
+          <span class="tab-icon">❓</span> FAQ (Q&A) 관리
+        </button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('preregs')">
+          <span class="tab-icon">🚀</span> 사전 예약 / 구독자
+        </button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('notices')">
+          <span class="tab-icon">📢</span> 공지사항 관리
+        </button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('contents')">
+          <span class="tab-icon">⚙️</span> 랜딩 콘텐츠 설정
+        </button>
+      </nav>
+
+      <!-- 메인 콘솔 영역 -->
+      <main class="admin-main">
+        
+        <!-- 01. 대시보드 개요 탭 -->
+        <div id="tab-overview" class="admin-tab-content active">
+          <div class="tab-header">
+            <h3>📊 시스템 통합 현황 요약</h3>
+            <p>실시간 수집된 문의, 사전 예약자, 콘텐츠 관리 지표입니다.</p>
+          </div>
+
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <div class="stat-icon cyan">💬</div>
+              <div class="stat-info">
+                <span class="stat-value" id="statInquiries">-</span>
+                <span class="stat-title">총 접수 문의</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="stat-icon amber">⏳</div>
+              <div class="stat-info">
+                <span class="stat-value" id="statPendingInquiries">-</span>
+                <span class="stat-title">미처리(대기) 문의</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="stat-icon purple">🚀</div>
+              <div class="stat-info">
+                <span class="stat-value" id="statPreRegs">-</span>
+                <span class="stat-title">사전 예약 및 구독자</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="stat-icon green">📢</div>
+              <div class="stat-info">
+                <span class="stat-value" id="statNotices">-</span>
+                <span class="stat-title">등록된 공지사항</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="stat-icon blue">❓</div>
+              <div class="stat-info">
+                <span class="stat-value" id="statFaqs">-</span>
+                <span class="stat-title">FAQ (Q&A) 항목</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-actions-card">
+            <h4>⚡ 빠른 관리 작업</h4>
+            <div class="action-btn-group">
+              <button onclick="switchAdminTab('inquiries')" class="btn btn-secondary">💬 미처리 문의 확인하기</button>
+              <button onclick="openModal('modalAddFaq')" class="btn btn-primary">+ 신규 FAQ 작성</button>
+              <button onclick="openModal('modalAddNotice')" class="btn btn-primary">+ 새 공지사항 등록</button>
+              <a href="/api/admin/pre-registrations/export-csv" class="btn btn-secondary" download>📥 구독자 목록 CSV 다운로드</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 02. 문의 & Q&A 관리 탭 -->
+        <div id="tab-inquiries" class="admin-tab-content">
+          <div class="tab-header flex-between">
+            <div>
+              <h3>💬 문의 및 Q&A 접수 목록</h3>
+              <p>방문자가 작성한 견적 문의 및 질문 내역을 확인하고 처리 상태를 변경합니다.</p>
+            </div>
+            <div class="filter-controls">
+              <select id="inquiryStatusFilter" onchange="loadAdminInquiries()" class="form-select">
+                <option value="">전체 상태 보기</option>
+                <option value="PENDING">PENDING (대기중)</option>
+                <option value="IN_PROGRESS">IN_PROGRESS (처리중)</option>
+                <option value="COMPLETED">COMPLETED (완료)</option>
+              </select>
+              <button onclick="loadAdminInquiries()" class="btn btn-secondary btn-sm">🔄 새로고침</button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>이름/담당자</th>
+                  <th>이메일 / 연락처</th>
+                  <th>회사명</th>
+                  <th>문의 유형</th>
+                  <th>상태</th>
+                  <th>접수일시</th>
+                  <th>관리 작업</th>
+                </tr>
+              </thead>
+              <tbody id="inquiriesTableBody">
+                <tr><td colspan="8" class="text-center">데이터를 불러오는 중입니다...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 03. FAQ 관리 탭 -->
+        <div id="tab-faqs" class="admin-tab-content">
+          <div class="tab-header flex-between">
+            <div>
+              <h3>❓ FAQ (Q&A 자주 묻는 질문) 관리</h3>
+              <p>랜딩페이지 Q&A 섹션에 노출할 질문 및 답변을 관리합니다.</p>
+            </div>
+            <button onclick="openModal('modalAddFaq')" class="btn btn-primary">+ 신규 FAQ 추가</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>순서</th>
+                  <th>카테고리</th>
+                  <th>질문 (Question)</th>
+                  <th>상태</th>
+                  <th>등록일</th>
+                  <th>관리 작업</th>
+                </tr>
+              </thead>
+              <tbody id="faqsTableBody">
+                <tr><td colspan="7" class="text-center">데이터를 불러오는 중입니다...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 04. 사전 예약 및 구독자 탭 -->
+        <div id="tab-preregs" class="admin-tab-content">
+          <div class="tab-header flex-between">
+            <div>
+              <h3>🚀 사전 예약 및 뉴스레터 구독자 목록</h3>
+              <p>사전 예약 신청자 및 이메일 구독자 데이터베이스입니다.</p>
+            </div>
+            <div class="filter-controls">
+              <select id="preRegFilter" onchange="loadAdminPreRegs()" class="form-select">
+                <option value="">전체 유형</option>
+                <option value="PRE_REGISTER">사전 예약자</option>
+                <option value="NEWSLETTER">뉴스레터 구독자</option>
+              </select>
+              <a href="/api/admin/pre-registrations/export-csv" class="btn btn-primary" download>📥 CSV 다운로드</a>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>이메일</th>
+                  <th>연락처</th>
+                  <th>신청 유형</th>
+                  <th>관심 분야</th>
+                  <th>신청 일시</th>
+                </tr>
+              </thead>
+              <tbody id="preRegsTableBody">
+                <tr><td colspan="6" class="text-center">데이터를 불러오는 중입니다...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 05. 공지사항 관리 탭 -->
+        <div id="tab-notices" class="admin-tab-content">
+          <div class="tab-header flex-between">
+            <div>
+              <h3>📢 공지사항 관리</h3>
+              <p>랜딩페이지 상단 및 공지사항 팝업에 노출되는 새소식을 작성하고 관리합니다.</p>
+            </div>
+            <button onclick="openModal('modalAddNotice')" class="btn btn-primary">+ 새 공지사항 작성</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>배지</th>
+                  <th>제목</th>
+                  <th>고정 여부</th>
+                  <th>게시 상태</th>
+                  <th>등록일</th>
+                  <th>관리 작업</th>
+                </tr>
+              </thead>
+              <tbody id="noticesTableBody">
+                <tr><td colspan="7" class="text-center">데이터를 불러오는 중입니다...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 06. 랜딩 콘텐츠 설정 탭 -->
+        <div id="tab-contents" class="admin-tab-content">
+          <div class="tab-header">
+            <h3>⚙️ 동적 랜딩페이지 콘텐츠 설정</h3>
+            <p>메인 화면의 제목, 설명문, 통계 수치를 실시간으로 수정하여 업데이트합니다.</p>
+          </div>
+
+          <form id="contentsForm" onsubmit="event.preventDefault(); saveLandingContents();" class="contents-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>히어로 메인 타이틀 (HTML 지원)</label>
+                <input type="text" id="content_hero_title" class="form-input" placeholder="자율형 보안 관제 &lt;br&gt;...">
+              </div>
+              <div class="form-group">
+                <label>히어로 서브타이틀 설명문</label>
+                <textarea id="content_hero_subtitle" class="form-textarea" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>수치 1: 실시간 탐지율</label>
+                <input type="text" id="content_stat_detection_rate" class="form-input" placeholder="99.98%">
+              </div>
+              <div class="form-group">
+                <label>수치 2: 평균 사고 대응 시간</label>
+                <input type="text" id="content_stat_response_time" class="form-input" placeholder="< 0.4s">
+              </div>
+              <div class="form-group">
+                <label>수치 3: 일일 방어 공격 건수</label>
+                <input type="text" id="content_stat_daily_attacks" class="form-input" placeholder="10M+">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 동적 콘텐츠 일괄 저장</button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- 💡 [모달 1] FAQ 작성 / 수정 팝업 -->
+  <div id="modalAddFaq" class="admin-modal-overlay">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h4 id="faqModalTitle">❓ FAQ 작성 / 수정</h4>
+        <button onclick="closeModal('modalAddFaq')" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="faqForm" onsubmit="event.preventDefault(); submitFaqForm();">
+        <input type="hidden" id="faqFormId">
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="faqCategory" class="form-select" required>
+            <option value="서비스/도입">서비스/도입</option>
+            <option value="기술/보안">기술/보안</option>
+            <option value="컨설팅/비용">컨설팅/비용</option>
+            <option value="컴플라이언스">컴플라이언스</option>
+            <option value="일반">일반</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>질문 (Question)</label>
+          <input type="text" id="faqQuestion" class="form-input" required placeholder="질문 내용을 입력하세요">
+        </div>
+        <div class="form-group">
+          <label>답변 (Answer)</label>
+          <textarea id="faqAnswer" class="form-textarea" rows="4" required placeholder="상세 답변 내용을 입력하세요"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>정렬 순서</label>
+            <input type="number" id="faqOrderNum" class="form-input" value="1">
+          </div>
+          <div class="form-group flex-1 flex-align-end">
+            <label class="checkbox-label">
+              <input type="checkbox" id="faqIsActive" checked> 공개 게시 여부
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeModal('modalAddFaq')" class="btn btn-secondary">취소</button>
+          <button type="submit" class="btn btn-primary">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 💡 [모달 2] 공지사항 작성 / 수정 팝업 -->
+  <div id="modalAddNotice" class="admin-modal-overlay">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h4 id="noticeModalTitle">📢 공지사항 작성 / 수정</h4>
+        <button onclick="closeModal('modalAddNotice')" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="noticeForm" onsubmit="event.preventDefault(); submitNoticeForm();">
+        <input type="hidden" id="noticeFormId">
+        <div class="form-group">
+          <label>공지 제목</label>
+          <input type="text" id="noticeTitle" class="form-input" required placeholder="공지사항 제목을 입력하세요">
+        </div>
+        <div class="form-group">
+          <label>배지 텍스트</label>
+          <input type="text" id="noticeBadge" class="form-input" value="NOTICE" placeholder="예: NEW RELEASE, EVENT, NOTICE">
+        </div>
+        <div class="form-group">
+          <label>공지 상세 내용</label>
+          <textarea id="noticeContent" class="form-textarea" rows="4" required placeholder="공지사항 세부 내용을 입력하세요"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="checkbox-label">
+              <input type="checkbox" id="noticeIsPinned"> 📌 상단 고정
+            </label>
+          </div>
+          <div class="form-group flex-1">
+            <label class="checkbox-label">
+              <input type="checkbox" id="noticeIsActive" checked> 게시 여부
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeModal('modalAddNotice')" class="btn btn-secondary">취소</button>
+          <button type="submit" class="btn btn-primary">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 💡 [모달 3] 문의 상세 보기 팝업 -->
+  <div id="modalViewInquiry" class="admin-modal-overlay">
+    <div class="admin-modal">
+      <div class="modal-header">
+        <h4>💬 문의 상세 정보</h4>
+        <button onclick="closeModal('modalViewInquiry')" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="inquiry-detail-body">
+        <p><strong>이름/담당자:</strong> <span id="viewInquiryName"></span></p>
+        <p><strong>이메일:</strong> <span id="viewInquiryEmail"></span> | <strong>연락처:</strong> <span id="viewInquiryPhone"></span></p>
+        <p><strong>회사명:</strong> <span id="viewInquiryCompany"></span></p>
+        <p><strong>문의 유형:</strong> <span id="viewInquiryType"></span></p>
+        <p><strong>접수 일시:</strong> <span id="viewInquiryDate"></span></p>
+        <hr class="modal-divider">
+        <p><strong>문의 및 요청 내용:</strong></p>
+        <div id="viewInquiryMessage" class="detail-content-box"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('modalViewInquiry')" class="btn btn-secondary">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 관리자 스크립트 -->
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>
