@@ -49,15 +49,11 @@ async def test_connection():
             faqs = (await session.execute(select(FaqItem))).scalars().all()
             print(f"[결과 요약] 현재 등록된 공지사항: {len(notices)}개 | FAQ: {len(faqs)}개")
 
-        print("\nAWS RDS / 데이터베이스 연동 테스트 완료!")
+        print("\n데이터베이스 연동 테스트 완료!")
 
     except Exception as e:
         print(f"\n❌ DB 연결 실패!")
         print(f"에러 메시지: {e}")
-        print("\n💡 RDS 연결 체크리스트:")
-        print(" 1. AWS RDS 보안 그룹(Security Group)에서 인바운드 규칙(Port 5432 또는 3306)이 허용되어 있는지 확인하세요.")
-        print(" 2. RDS 퍼블릭 액세스(Public Accessibility) 기능이 '예(Yes)'로 설정되어 있는지 확인하세요.")
-        print(" 3. .env 파일의 DB_HOST, DB_USER, DB_PASSWORD, DB_NAME이 정확한지 확인하세요.")
         sys.exit(1)
 
 if __name__ == "__main__":
