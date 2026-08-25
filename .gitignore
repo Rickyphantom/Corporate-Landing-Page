@@ -1,0 +1,20 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# SQLite Database
+*.db
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp

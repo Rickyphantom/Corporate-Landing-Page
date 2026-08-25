@@ -2,5 +2,9 @@ fastapi
 uvicorn
 jinja2
 sqlalchemy
+python-dotenv
+asyncpg
+psycopg2-binary
 aiomysql
 pymysql
+greenlet

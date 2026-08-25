@@ -31,7 +31,29 @@ async def verify_admin_password(payload: AdminLoginPayload):
 async def admin_dashboard_page(request: Request):
     """관리자 대시보드 메인 웹 페이지"""
     from app.main import templates
-    return templates.TemplateResponse(request, "admin.html", {"title": "SecOps — Administrator Portal"})
+    return templates.TemplateResponse(request, "admin.html", {"title": "SecOps — Administrator Portal", "active_page": "admin"})
+
+
+@router.get("/api/admin/stats")
+async def get_admin_dashboard_stats(db: AsyncSession = Depends(get_db)):
+    """대시보드 통계 요약 데이터 API"""
+    total_inquiries = (await db.execute(select(func.count(ContactInquiry.id)))).scalar() or 0
+    pending_inquiries = (await db.execute(select(func.count(ContactInquiry.id)).where(ContactInquiry.status == "PENDING"))).scalar() or 0
+    total_pre_regs = (await db.execute(select(func.count(PreRegistration.id)))).scalar() or 0
+    total_notices = (await db.execute(select(func.count(Notice.id)))).scalar() or 0
+    total_faqs = (await db.execute(select(func.count(FaqItem.id)))).scalar() or 0
+
+    return {
+        "success": True,
+        "data": {
+            "total_inquiries": total_inquiries,
+            "pending_inquiries": pending_inquiries,
+            "total_pre_regs": total_pre_regs,
+            "total_notices": total_notices,
+            "total_faqs": total_faqs
+        }
+    }
+
 
 
 @router.get("/api/admin/stats")
