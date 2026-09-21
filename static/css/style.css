@@ -278,7 +278,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #38bdf8 60%, #818cf8 130%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -422,6 +422,7 @@ body {
   color: #94a3b8;
   line-height: 1.6;
   margin: 0 0 20px 0;
+  max-width: none;
   flex-grow: 1;
 }
 
@@ -479,6 +480,7 @@ body {
   font-size: 0.85rem;
   color: #94a3b8;
   line-height: 1.5;
+  max-width: none;
   margin: 0;
 }
 
@@ -519,9 +521,10 @@ body {
 .compliance-box p,
 .contact-card p {
   font-size: 0.95rem;
-  color: #94a3b8;
+  color: #f8fafc; /* 밝은 색으로 변경하여 시인성 확보 */
   line-height: 1.6;
   margin: 0 0 24px 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8); /* 텍스트가 배경에 묻히지 않도록 그림자 추가 */
 }
 
 .badge-list {
@@ -1473,6 +1476,7 @@ body {
   margin: 0;
   color: #94a3b8;
   font-size: 0.95rem;
+  max-width: none; /* 부모 요소 크기에 맞게 채워지도록 강제 제한 해제 */
 }
 
 .btn-lg {
@@ -1523,6 +1527,8 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
   margin-top: 32px;
+  width: 100%;
+  max-width: 1440px; /* 더 넓게 쓸 수 있도록 폭 확장 */
 }
 
 .hub-card {
@@ -1578,6 +1584,7 @@ body {
   font-size: 0.98rem;
   line-height: 1.6;
   flex: 1;
+  max-width: none;
 }
 
 @media (max-width: 992px) {

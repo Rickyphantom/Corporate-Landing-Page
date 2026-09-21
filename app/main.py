@@ -118,24 +118,18 @@ app.include_router(pre_registration.router)
 app.include_router(admin.router)
 
 @app.get("/")
-<<<<<<< HEAD
 async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
     # DB에서 랜딩페이지 동적 콘텐츠 및 공지사항, FAQ 가져오기
     content_result = await db.execute(select(LandingContent))
     raw_contents = content_result.scalars().all()
     contents = {c.key: c.value for c in raw_contents}
-=======
-async def read_root():
-    """웹페이지 루트 접근 시 관리자페이지로 리다이렉트"""
-    return RedirectResponse(url="/admin")
->>>>>>> f08d0654ab6bb1749ec1ef6852cec5b8e1f74693
+    
+    notice_result = await db.execute(
+        select(Notice).where(Notice.is_active == True).order_by(Notice.is_pinned.desc(), Notice.created_at.desc())
+    )
+    active_notices = notice_result.scalars().all()
+    active_notice_list = [n.to_dict() for n in active_notices]
 
-@app.get("/qna")
-async def read_qna():
-    """Q&A 페이지 접근 시 관리자페이지로 리다이렉트"""
-    return RedirectResponse(url="/admin")
-
-<<<<<<< HEAD
     faq_result = await db.execute(
         select(FaqItem).where(FaqItem.is_active == True).order_by(FaqItem.order_num.asc(), FaqItem.id.asc())
     )
@@ -192,9 +186,3 @@ async def read_support(request: Request, db: AsyncSession = Depends(get_db)):
             "active_page": "support"
         }
     )
-=======
-@app.get("/support")
-async def read_support():
-    """지원 센터 접근 시 관리자페이지로 리다이렉트"""
-    return RedirectResponse(url="/admin")
->>>>>>> f08d0654ab6bb1749ec1ef6852cec5b8e1f74693

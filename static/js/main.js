@@ -31,10 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const distance = Math.abs(windowCenter - secCenter);
 
-      const maxDistance = windowHeight * 0.6;
-      let opacity = 1 - distance / maxDistance;
+      const threshold = windowHeight * 0.35; // 화면 중앙에서 35% 범위 내에서는 뚜렷하게 보임
+      let opacity = 1;
+      
+      if (distance > threshold) {
+        // 가장자리 영역에서만 서서히 사라지도록 계산 (나머지 거리에 비례하여 감소)
+        opacity = 1 - ((distance - threshold) / (windowHeight * 0.25));
+      }
 
-      if (opacity < 0.1) opacity = 0.1;
+      if (opacity < 0.2) opacity = 0.2;
       if (opacity > 1) opacity = 1;
 
       sec.style.opacity = opacity;
