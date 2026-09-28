@@ -1,54 +1,81 @@
-<!DOCTYPE html>
+from typing import Dict, List, Any, Optional
+from app.views.components import render_head, render_sidebar, render_notice_modal
+
+def render_index_page(
+    title: str = "SecOps — Next-Gen Cyber Defense",
+    contents: Optional[Dict[str, str]] = None,
+    notices: Optional[List[Dict[str, Any]]] = None,
+    faqs: Optional[List[Dict[str, Any]]] = None,
+    active_page: str = "index"
+) -> str:
+    """메인 랜딩페이지 HTML 생성 파이썬 뷰"""
+    if contents is None:
+        contents = {}
+    if notices is None:
+        notices = []
+    
+    # 01. Overview 섹션 데이터
+    hero_title = contents.get(
+        "hero_title",
+        '자율형 보안 관제 &<br><span class="gradient-text">지능형 사이버 방어</span>'
+    )
+    hero_subtitle = contents.get(
+        "hero_subtitle",
+        "복잡해지는 멀티클라우드 환경과 고도화된 제로데이 공격을 실시간 신경망 엔진으로 감지하고 0.4초 이내에 자동 차단 및 격리합니다."
+    )
+    stat_detection = contents.get("stat_detection_rate", "99.98%")
+    stat_response = contents.get("stat_response_time", "< 0.4s")
+    stat_daily = contents.get("stat_daily_attacks", "10M+")
+
+    # 상단 공지 배너
+    notice_bar_html = ""
+    if notices and len(notices) > 0:
+        first_n = notices[0]
+        badge = first_n.get("badge_text", "NOTICE")
+        n_title = first_n.get("title", "")
+        n_content_summary = first_n.get("content", "")[:60]
+        notice_bar_html = f"""<div class="notice-announcement-bar">
+        <span class="notice-badge">{badge}</span>
+        <span class="notice-text"><strong>{n_title}</strong> - {n_content_summary}...</span>
+        <button class="notice-detail-btn" onclick="openNoticeModal()">상세보기 →</button>
+      </div>"""
+
+    head_html = render_head(title=title)
+    sidebar_html = render_sidebar(active_page=active_page)
+    modal_html = render_notice_modal(notices=notices)
+
+    return f"""<!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SecOps - 차세대 자율형 사이버 방어 및 위협 인텔리전스 플랫폼. 실시간 위협 탐지, 제로데이 방어, 자동화된 보안 파이프라인.">
-  <title>{{ title or "SecOps — Next-Gen Cyber Defense" }}</title>
-  <!-- Google Fonts & Pretendard CDN -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-  
-  <!-- 스타일시트 -->
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
+{head_html}
 <body>
 
-  <!-- 고정 사이드바 인클루드 -->
-  {% include "sidebar.html" %}
+  <!-- 고정 사이드바 -->
+  {sidebar_html}
 
-  <!-- 메인 콘텐츠 영역 (사이드바 너비만큼 왼쪽 여백 확보) -->
+  <!-- 메인 콘텐츠 영역 -->
   <main class="main-content">
     
     <!-- 01. Overview 섹션 -->
     <section id="section1" class="content-section">
-      {% if notices and notices|length > 0 %}
-      <div class="notice-announcement-bar">
-        <span class="notice-badge">{{ notices[0].badge_text }}</span>
-        <span class="notice-text"><strong>{{ notices[0].title }}</strong> - {{ notices[0].content[:60] }}...</span>
-        <button class="notice-detail-btn" onclick="openNoticeModal()">상세보기 →</button>
-      </div>
-      {% endif %}
+      {notice_bar_html}
       
       <div class="section-badge">01 // OVERVIEW</div>
-      <h1 class="hero-title">{{ contents.hero_title | safe if contents and contents.hero_title else '자율형 보안 관제 &<br><span class="gradient-text">지능형 사이버 방어</span>' | safe }}</h1>
+      <h1 class="hero-title">{hero_title}</h1>
       <p class="section-desc">
-        {{ contents.hero_subtitle if contents and contents.hero_subtitle else '복잡해지는 멀티클라우드 환경과 고도화된 제로데이 공격을 실시간 신경망 엔진으로 감지하고 0.4초 이내에 자동 차단 및 격리합니다.' }}
+        {hero_subtitle}
       </p>
       
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-number">{{ contents.stat_detection_rate if contents and contents.stat_detection_rate else '99.98%' }}</span>
+          <span class="stat-number">{stat_detection}</span>
           <span class="stat-label">실시간 위협 탐지율</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">{{ contents.stat_response_time if contents and contents.stat_response_time else '< 0.4s' }}</span>
+          <span class="stat-number">{stat_response}</span>
           <span class="stat-label">평균 사고 대응 시간</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">{{ contents.stat_daily_attacks if contents and contents.stat_daily_attacks else '10M+' }}</span>
+          <span class="stat-number">{stat_daily}</span>
           <span class="stat-label">일일 방어 공격 건수</span>
         </div>
       </div>
@@ -190,29 +217,10 @@
 
   </main>
 
-  <!-- 📢 공지사항 상세 보기 모달 -->
-  {% if notices and notices|length > 0 %}
-  <div id="publicNoticeModal" class="admin-modal-overlay">
-    <div class="admin-modal">
-      <div class="modal-header">
-        <h4>📢 {{ notices[0].badge_text }}</h4>
-        <button onclick="closeNoticeModal()" class="modal-close-btn">&times;</button>
-      </div>
-      <div class="inquiry-detail-body">
-        <h3>{{ notices[0].title }}</h3>
-        <p class="text-muted"><small>등록일: {{ notices[0].created_at }}</small></p>
-        <hr class="modal-divider">
-        <div class="detail-content-box">{{ notices[0].content }}</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" onclick="closeNoticeModal()" class="btn btn-primary">확인</button>
-      </div>
-    </div>
-  </div>
-  {% endif %}
+  <!-- 공지사항 모달 -->
+  {modal_html}
 
   <!-- 메인 스크립트 연결 -->
   <script src="/static/js/main.js"></script>
 </body>
-</html>
-
+</html>"""

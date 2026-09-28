@@ -1,3 +1,4 @@
+from typing import Any
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ CUSTOM_DATABASE_URL = os.getenv("DATABASE_URL")
 
 if CUSTOM_DATABASE_URL:
     DATABASE_URL = CUSTOM_DATABASE_URL
-    engine_kwargs = {"echo": False}
+    engine_kwargs: dict[str, Any] = {"echo": False}
     if not DATABASE_URL.startswith("sqlite"):
         engine_kwargs.update({
             "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),

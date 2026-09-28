@@ -1,15 +1,15 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import engine, Base, get_db, AsyncSessionLocal
 from app.models import LandingContent, Notice, FaqItem
 from app.routers import contact, pre_registration, admin
+from app.views import render_index_page, render_qna_page, render_support_page
 
 # 기본 디렉터리 경로 설정
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
             default_contents = [
                 LandingContent(
                     key="hero_title",
-                    value='자율형 보안 관제 &<br><span class="gradient-text">지능형 사이버 방어</span>',
+                    value='자율형보안보안보안보안 관제 &<br><span class="gradient-text">지능형 사이버 방어</span>',
                     section_name="Overview"
                 ),
                 LandingContent(
@@ -108,16 +108,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SecOps Corporate Landing Page", lifespan=lifespan)
 
-# 정적 파일(CSS, JS 등) 및 템플릿(HTML) 경로 마운트
+# 정적 파일(CSS, JS 등) 마운트
 app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "static")), name="static")
-templates = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
 
 # 라우터 포함
 app.include_router(contact.router)
 app.include_router(pre_registration.router)
 app.include_router(admin.router)
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
     # DB에서 랜딩페이지 동적 콘텐츠 및 공지사항, FAQ 가져오기
     content_result = await db.execute(select(LandingContent))
@@ -136,20 +135,16 @@ async def read_landing(request: Request, db: AsyncSession = Depends(get_db)):
     active_faqs = faq_result.scalars().all()
     faq_list = [f.to_dict() for f in active_faqs]
 
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {
-            "title": "SecOps — Next-Gen Cyber Defense & Operations",
-            "year": 2026,
-            "contents": contents,
-            "notices": active_notice_list,
-            "faqs": faq_list,
-            "active_page": "index"
-        }
+    html_content = render_index_page(
+        title="SecOps — Next-Gen Cyber Defense & Operations",
+        contents=contents,
+        notices=active_notice_list,
+        faqs=faq_list,
+        active_page="index"
     )
+    return HTMLResponse(content=html_content)
 
-@app.get("/qna")
+@app.get("/qna", response_class=HTMLResponse)
 async def read_qna(request: Request, db: AsyncSession = Depends(get_db)):
     faq_result = await db.execute(
         select(FaqItem).where(FaqItem.is_active == True).order_by(FaqItem.order_num.asc(), FaqItem.id.asc())
@@ -157,18 +152,14 @@ async def read_qna(request: Request, db: AsyncSession = Depends(get_db)):
     active_faqs = faq_result.scalars().all()
     faq_list = [f.to_dict() for f in active_faqs]
 
-    return templates.TemplateResponse(
-        request,
-        "qna.html",
-        {
-            "title": "Q&A 지식베이스 — SecOps Cyber Defense",
-            "year": 2026,
-            "faqs": faq_list,
-            "active_page": "qna"
-        }
+    html_content = render_qna_page(
+        title="Q&A 지식베이스 — SecOps Cyber Defense",
+        faqs=faq_list,
+        active_page="qna"
     )
+    return HTMLResponse(content=html_content)
 
-@app.get("/support")
+@app.get("/support", response_class=HTMLResponse)
 async def read_support(request: Request, db: AsyncSession = Depends(get_db)):
     notice_result = await db.execute(
         select(Notice).where(Notice.is_active == True).order_by(Notice.is_pinned.desc(), Notice.created_at.desc())
@@ -176,13 +167,9 @@ async def read_support(request: Request, db: AsyncSession = Depends(get_db)):
     active_notices = notice_result.scalars().all()
     active_notice_list = [n.to_dict() for n in active_notices]
 
-    return templates.TemplateResponse(
-        request,
-        "support.html",
-        {
-            "title": "지원센터 — SecOps Cyber Defense",
-            "year": 2026,
-            "notices": active_notice_list,
-            "active_page": "support"
-        }
+    html_content = render_support_page(
+        title="지원센터 — SecOps Cyber Defense",
+        notices=active_notice_list,
+        active_page="support"
     )
+    return HTMLResponse(content=html_content)

@@ -1,37 +1,45 @@
-<!DOCTYPE html>
+from typing import List, Dict, Any, Optional
+from app.views.components import render_head, render_sidebar, render_notice_modal
+
+def render_support_page(
+    title: str = "지원센터 — SecOps Cyber Defense",
+    notices: Optional[List[Dict[str, Any]]] = None,
+    active_page: str = "support"
+) -> str:
+    """지원센터 1:1 헬프데스크 페이지 HTML 생성 파이썬 뷰"""
+    if notices is None:
+        notices = []
+
+    notice_bar_html = ""
+    if notices and len(notices) > 0:
+        first_n = notices[0]
+        badge = first_n.get("badge_text", "NOTICE")
+        n_title = first_n.get("title", "")
+        n_content_summary = first_n.get("content", "")[:60]
+        notice_bar_html = f"""<div class="notice-announcement-bar">
+        <span class="notice-badge">{badge}</span>
+        <span class="notice-text"><strong>{n_title}</strong> - {n_content_summary}...</span>
+        <button class="notice-detail-btn" onclick="openNoticeModal()">상세보기 →</button>
+      </div>"""
+
+    head_html = render_head(title=title, description="SecOps 지원센터 - 24/7 핫라인, 1:1 맞춤 기술 문의, 무료 보안 진단 및 도입 컨설팅 접수.")
+    sidebar_html = render_sidebar(active_page=active_page)
+    modal_html = render_notice_modal(notices=notices)
+
+    return f"""<!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SecOps 지원센터 - 24/7 핫라인, 1:1 맞춤 기술 문의, 무료 보안 진단 및 도입 컨설팅 접수.">
-  <title>{{ title or "지원센터 — SecOps Cyber Defense" }}</title>
-  
-  <!-- Google Fonts & Pretendard CDN -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-  
-  <!-- 스타일시트 -->
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
+{head_html}
 <body class="standalone-page">
 
-  <!-- 고정 사이드바 인클루드 -->
-  {% include "sidebar.html" %}
+  <!-- 고정 사이드바 -->
+  {sidebar_html}
 
   <!-- 메인 콘텐츠 영역 -->
   <main class="main-content">
     
     <!-- 지원센터 메인 헤더 섹션 -->
     <section class="content-section standalone-header-section">
-      {% if notices and notices|length > 0 %}
-      <div class="notice-announcement-bar">
-        <span class="notice-badge">{{ notices[0].badge_text }}</span>
-        <span class="notice-text"><strong>{{ notices[0].title }}</strong> - {{ notices[0].content[:60] }}...</span>
-        <button class="notice-detail-btn" onclick="openNoticeModal()">상세보기 →</button>
-      </div>
-      {% endif %}
+      {notice_bar_html}
 
       <div class="section-badge">SUPPORT CENTER // 1:1 HELPDESK</div>
       <h1 class="hero-title">SecOps 고객 지원센터 &<br><span class="gradient-text">1:1 맞춤 엔지니어링 지원</span></h1>
@@ -144,62 +152,44 @@
 
   </main>
 
-  <!-- 📢 공지사항 상세 보기 모달 -->
-  {% if notices and notices|length > 0 %}
-  <div id="publicNoticeModal" class="admin-modal-overlay">
-    <div class="admin-modal">
-      <div class="modal-header">
-        <h4>📢 {{ notices[0].badge_text }}</h4>
-        <button onclick="closeNoticeModal()" class="modal-close-btn">&times;</button>
-      </div>
-      <div class="inquiry-detail-body">
-        <h3>{{ notices[0].title }}</h3>
-        <p class="text-muted"><small>등록일: {{ notices[0].created_at }}</small></p>
-        <hr class="modal-divider">
-        <div class="detail-content-box">{{ notices[0].content }}</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" onclick="closeNoticeModal()" class="btn btn-primary">확인</button>
-      </div>
-    </div>
-  </div>
-  {% endif %}
+  <!-- 공지사항 모달 -->
+  {modal_html}
 
   <!-- 메인 스크립트 연결 -->
   <script src="/static/js/main.js"></script>
   <script>
-    async function submitPreRegSupport(e) {
+    async function submitPreRegSupport(e) {{
       e.preventDefault();
       const email = document.getElementById('supportPreRegEmail').value.trim();
       const statusEl = document.getElementById('supportPreRegStatus');
 
-      try {
-        const res = await fetch('/api/pre-registration', {
+      try {{
+        const res = await fetch('/api/pre-registration', {{
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
             email: email,
             reg_type: '리포트구독',
             interest: '보안 인텔리전스 리포트'
-          })
-        });
+          }})
+        }});
         const data = await res.json();
-        if (res.ok && data.success) {
+        if (res.ok && data.success) {{
           statusEl.className = 'form-feedback success';
           statusEl.textContent = '✅ ' + data.message;
           statusEl.style.display = 'block';
           document.getElementById('supportPreRegEmail').value = '';
-        } else {
+        }} else {{
           statusEl.className = 'form-feedback error';
           statusEl.textContent = '❌ ' + (data.detail || '구독 처리 실패');
           statusEl.style.display = 'block';
-        }
-      } catch (err) {
+        }}
+      }} catch (err) {{
         statusEl.className = 'form-feedback error';
         statusEl.textContent = '❌ 통신 오류가 발생했습니다.';
         statusEl.style.display = 'block';
-      }
-    }
+      }}
+    }}
   </script>
 </body>
-</html>
+</html>"""

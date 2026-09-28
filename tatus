@@ -1,0 +1,17 @@
+[33mcommit 5468e40adbf86b28e990ee68aa8f4ff2ef714e82[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/변경1[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Rickyphantom <dbtjsqls2002@naver.com>
+Date:   Mon Sep 28 11:00:03 2026 +0900
+
+    변경1
+
+[33mcommit dfa579680c7d5eae377fe9b6e5fbcf098d4f2bf4[m
+Author: Rickyphantom <dbtjsqls2002@naver.com>
+Date:   Mon Sep 28 10:46:18 2026 +0900
+
+    Add section 5 to sidebar
+
+[33mcommit 6b2de1785fb3c64570803467407e26f623d486da[m
+Author: Rickyphantom <dbtjsqls2002@naver.com>
+Date:   Mon Sep 21 16:12:32 2026 +0900
+
+    Fix merge conflicts, layout issues, and scroll opacity effect
