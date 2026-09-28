@@ -187,7 +187,7 @@ async def get_all_notices(db: AsyncSession = Depends(get_db)):
     notices = result.scalars().all()
     return {"success": True, "count": len(notices), "data": [n.to_dict() for n in notices]}
 
-
+#11
 @router.post("/api/admin/notices", status_code=status.HTTP_201_CREATED)
 async def create_notice(payload: NoticeCreate, db: AsyncSession = Depends(get_db)):
     notice = Notice(
